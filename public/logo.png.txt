@@ -1,0 +1,2 @@
+# Default logo placeholder
+# Replace this with your organization logo (logo.png)

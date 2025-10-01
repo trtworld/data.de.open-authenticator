@@ -1,0 +1,27 @@
+services:
+  authenticator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: authenticator-trt
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your-encryption-key-change-in-production-32-chars-long}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-actrt123admin}
+      - VIEWER_PASSWORD=${VIEWER_PASSWORD:-actrt123viewer}
+      - ORGANIZATION_NAME=${ORGANIZATION_NAME:-TRT}
+      - LOGO_PATH=${LOGO_PATH:-/app/public/logo.png}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

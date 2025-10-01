@@ -1,0 +1,35 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --no-cache wget
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including devDependencies for build)
+RUN npm install
+
+# Copy all source files
+COPY . .
+
+# Build application
+RUN npm run build
+
+# Copy static files to standalone directory
+RUN cp -r .next/static .next/standalone/.next/static && \
+    mkdir -p .next/standalone/public && \
+    cp -r public/* .next/standalone/public/ 2>/dev/null || true
+
+# Create data directory
+RUN mkdir -p /app/data
+
+EXPOSE 3000
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Start application using standalone server
+CMD ["node", ".next/standalone/server.js"]
