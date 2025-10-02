@@ -4,20 +4,38 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Account } from "@/types"
-import { Copy, Trash2, Check, Clock } from "lucide-react"
+import { Copy, Trash2, Check, Clock, Users, Lock } from "lucide-react"
 
 interface AccountCardProps {
   account: Account
   onDelete?: (id: number) => void
+  onRequestDelete?: (account: Account) => void
 }
 
-export function AccountCard({ account, onDelete }: AccountCardProps) {
+export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(account.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDeleteClick = () => {
+    if (onRequestDelete) {
+      onRequestDelete(account)
+    } else if (onDelete) {
+      onDelete(account.id)
+    }
+  }
+
+  const [idCopied, setIdCopied] = useState(false)
+
+  const handleCopyId = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    await navigator.clipboard.writeText(account.id.toString())
+    setIdCopied(true)
+    setTimeout(() => setIdCopied(false), 2000)
   }
 
   const progressPercentage = (account.timeRemaining / 30) * 100
@@ -33,21 +51,55 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg truncate bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-              {account.label}
-            </h3>
-            {account.issuer && (
-              <p className="text-sm text-muted-foreground truncate mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                {account.issuer}
-              </p>
-            )}
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-lg truncate bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                {account.label}
+              </h3>
+              {account.visibility === "private" ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                  <Lock className="w-3 h-3" />
+                  Private
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  <Users className="w-3 h-3" />
+                  Team
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {account.issuer && (
+                <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  {account.issuer}
+                </p>
+              )}
+              <button
+                onClick={handleCopyId}
+                className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 hover:bg-muted rounded text-xs flex items-center gap-1"
+                title={`Copy API ID for this account`}
+              >
+                {idCopied ? (
+                  <>
+                    <Check className="w-3 h-3 text-green-600" />
+                    <span className="text-green-600 font-medium">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3 text-muted-foreground hover:text-foreground transition-colors" />
+                    <span className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                      API ID: {account.id}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-          {onDelete && (
+          {(onDelete || onRequestDelete) && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onDelete(account.id)}
+              onClick={handleDeleteClick}
               className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <Trash2 className="w-4 h-4" />

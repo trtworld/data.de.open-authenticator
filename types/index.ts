@@ -8,9 +8,11 @@ export interface Account {
   algorithm?: string
   digits?: number
   period?: number
+  visibility?: "team" | "private"
+  created_by?: string
 }
 
 export interface User {
   username: string
-  role: "admin" | "viewer"
+  role: "admin" | "viewer" | "user"
 }

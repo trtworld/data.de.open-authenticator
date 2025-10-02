@@ -114,10 +114,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <div className="hidden sm:block">
                 <h1 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                  Open Authenticator
+                  Otto-TP
                 </h1>
                 <p className="text-xs text-muted-foreground">
-                  TOTP Code Manager
+                  Online Team-based TOTP
                 </p>
               </div>
             </div>
@@ -182,8 +182,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-200/50 dark:border-slate-800/50 glass-effect">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600 dark:text-slate-400">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-4 text-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full text-slate-600 dark:text-slate-400">
               <p className="text-center sm:text-left">
                 Developed with <span className="text-red-500 animate-pulse">❤</span> as open source by{" "}
                 <a
@@ -195,16 +195,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   Alameddin Çelik
                 </a>
               </p>
+              <a
+                href="https://github.com/alameddinc/open-authenticator"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors group"
+              >
+                <Github className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <span className="font-medium">Star on GitHub</span>
+              </a>
             </div>
-            <a
-              href="https://github.com/alameddinc/open-authenticator"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors group"
-            >
-              <Github className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="font-medium">Star on GitHub</span>
-            </a>
+            <p className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-1.5">
+              <span className="text-base">🇵🇸</span>
+              Free Palestine
+            </p>
           </div>
         </div>
       </footer>

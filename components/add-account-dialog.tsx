@@ -11,20 +11,29 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Account } from "@/types"
-import { Upload, KeyRound, Link2 } from "lucide-react"
+import { Upload, KeyRound, Link2, Users, Lock } from "lucide-react"
 
 interface AddAccountDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (account: Omit<Account, "id" | "code" | "timeRemaining">) => void
+  userRole: "admin" | "viewer" | "user"
 }
 
-export function AddAccountDialog({ open, onOpenChange, onAdd }: AddAccountDialogProps) {
+export function AddAccountDialog({ open, onOpenChange, onAdd, userRole }: AddAccountDialogProps) {
   const [tab, setTab] = useState("manual")
   const [label, setLabel] = useState("")
   const [issuer, setIssuer] = useState("")
   const [secret, setSecret] = useState("")
+  const [visibility, setVisibility] = useState<"team" | "private">("team")
   const [otpauthUrl, setOtpauthUrl] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -41,12 +50,14 @@ export function AddAccountDialog({ open, onOpenChange, onAdd }: AddAccountDialog
       algorithm: "SHA1",
       digits: 6,
       period: 30,
+      visibility,
     })
 
     // Reset form
     setLabel("")
     setIssuer("")
     setSecret("")
+    setVisibility("team")
   }
 
   const parseOtpauthUrl = async (url: string) => {
@@ -266,6 +277,53 @@ export function AddAccountDialog({ open, onOpenChange, onAdd }: AddAccountDialog
                   The secret key is usually provided when setting up 2FA
                 </p>
               </div>
+
+              {/* Visibility selection - only for admin, not for user role */}
+              {userRole !== "user" && (
+                <div className="space-y-2">
+                  <label htmlFor="visibility" className="text-sm font-medium">
+                    Visibility *
+                  </label>
+                  <Select value={visibility} onValueChange={(value: "team" | "private") => setVisibility(value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="team">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary" />
+                          <div>
+                            <p className="font-medium">Team</p>
+                            <p className="text-xs text-muted-foreground">Visible to all team members</p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="private">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-amber-600" />
+                          <div>
+                            <p className="font-medium">Private</p>
+                            <p className="text-xs text-muted-foreground">Only visible to you</p>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Choose if this account is shared with your team or private
+                  </p>
+                </div>
+              )}
+
+              {/* Info message for user role */}
+              {userRole === "user" && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <Lock className="w-4 h-4 inline mr-1" />
+                    Your accounts are automatically private and only visible to you
+                  </p>
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button

@@ -73,10 +73,10 @@ export default function LoginPage() {
             {/* Title */}
             <div className="text-center space-y-2">
               <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                Open Authenticator
+                Otto-TP
               </CardTitle>
               <CardDescription className="text-base">
-                Secure TOTP code management
+                Online Team-based TOTP • Open Source
               </CardDescription>
             </div>
           </CardHeader>
@@ -144,7 +144,7 @@ export default function LoginPage() {
         </Card>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400 space-y-2 animate-fade-in">
+        <footer className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400 space-y-3 animate-fade-in">
           <p>
             Developed with ❤️ as open source by{" "}
             <a
@@ -165,6 +165,10 @@ export default function LoginPage() {
             <Github className="w-4 h-4" />
             <span className="font-medium">View on GitHub</span>
           </a>
+          <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center justify-center gap-1.5">
+            <span className="text-base">🇵🇸</span>
+            Free Palestine
+          </p>
         </footer>
       </div>
     </div>

@@ -7,12 +7,15 @@ CREATE TABLE IF NOT EXISTS accounts (
   algorithm TEXT DEFAULT 'SHA1',
   digits INTEGER DEFAULT 6,
   period INTEGER DEFAULT 30,
+  visibility TEXT DEFAULT 'team' CHECK(visibility IN ('team', 'private')),
+  created_by TEXT,
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch())
 );
 
 CREATE INDEX IF NOT EXISTS idx_accounts_label ON accounts(label);
 CREATE INDEX IF NOT EXISTS idx_accounts_created ON accounts(created_at);
+CREATE INDEX IF NOT EXISTS idx_accounts_visibility ON accounts(visibility);
 
 -- Users table for dynamic user management
 CREATE TABLE IF NOT EXISTS users (
@@ -58,3 +61,20 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_username ON audit_logs(username);
 CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+
+-- API Keys table for admin API access
+CREATE TABLE IF NOT EXISTS api_keys (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  api_key TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  created_at INTEGER DEFAULT (unixepoch()),
+  last_used_at INTEGER,
+  expires_at INTEGER,
+  is_active INTEGER DEFAULT 1 CHECK(is_active IN (0, 1)),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(api_key);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(is_active);

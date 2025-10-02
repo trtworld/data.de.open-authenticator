@@ -13,19 +13,59 @@ const addAccountSchema = z.object({
   algorithm: z.enum(["SHA1", "SHA256", "SHA512"]).optional(),
   digits: z.number().min(6).max(8).optional(),
   period: z.number().min(15).max(60).optional(),
+  visibility: z.enum(["team", "private"]).optional(),
 })
 
 // GET /api/accounts - List all accounts with current TOTP codes
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth(request)
+    const user = await requireAuth(request)
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const search = searchParams.get("search") || ""
+    const issuer = searchParams.get("issuer") || ""
 
     const db = getDb()
+
+    // Build WHERE clause based on user role and filters
+    let whereClause = ""
+    const params: any[] = []
+
+    // Visibility filtering based on role
+    if (user.role === "admin") {
+      // Admin: All team accounts + own private accounts
+      whereClause = "(visibility = 'team' OR created_by = ?)"
+      params.push(user.username)
+    } else if (user.role === "viewer") {
+      // Viewer: Only admin's team accounts
+      whereClause = "(visibility = 'team' AND created_by IN (SELECT username FROM users WHERE role = 'admin'))"
+    } else {
+      // User: Only own accounts
+      whereClause = "created_by = ?"
+      params.push(user.username)
+    }
+
+    // Add issuer filter
+    if (issuer) {
+      whereClause += " AND issuer LIKE ?"
+      params.push(`%${issuer}%`)
+    }
+
+    // Add search filter (label OR issuer)
+    if (search) {
+      whereClause += " AND (label LIKE ? OR issuer LIKE ?)"
+      params.push(`%${search}%`, `%${search}%`)
+    }
+
     const accounts = db
       .prepare(
-        "SELECT id, label, issuer, secret, algorithm, digits, period FROM accounts ORDER BY created_at DESC"
+        `SELECT id, label, issuer, secret, algorithm, digits, period, visibility, created_by
+         FROM accounts
+         WHERE ${whereClause}
+         ORDER BY created_at DESC`
       )
-      .all() as any[]
+      .all(...params) as any[]
 
     // Generate current TOTP codes
     const accountsWithCodes = accounts.map((account) => {
@@ -47,6 +87,8 @@ export async function GET(request: NextRequest) {
         algorithm: account.algorithm,
         digits: account.digits,
         period: account.period,
+        visibility: account.visibility || "team",
+        created_by: account.created_by,
       }
     })
 
@@ -63,7 +105,7 @@ export async function GET(request: NextRequest) {
 // POST /api/accounts - Add new account
 export async function POST(request: NextRequest) {
   try {
-    await requireAdmin(request)
+    const user = await requireAuth(request)
 
     const body = await request.json()
 
@@ -82,7 +124,7 @@ export async function POST(request: NextRequest) {
       accountData = addAccountSchema.parse(body)
     }
 
-    const { label, secret, issuer, algorithm, digits, period } = accountData
+    const { label, secret, issuer, algorithm, digits, period, visibility } = accountData
 
     // Validate secret format
     if (!validateSecret(secret)) {
@@ -92,6 +134,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // User role can only create private accounts
+    const finalVisibility = user.role === "user" ? "private" : (visibility || "team")
+
     // Encrypt secret
     const encryptedSecret = encryptSecret(secret, ENCRYPTION_KEY)
 
@@ -99,8 +144,8 @@ export async function POST(request: NextRequest) {
     const db = getDb()
     const result = db
       .prepare(
-        `INSERT INTO accounts (label, issuer, secret, algorithm, digits, period)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO accounts (label, issuer, secret, algorithm, digits, period, visibility, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         label,
@@ -108,7 +153,9 @@ export async function POST(request: NextRequest) {
         encryptedSecret,
         algorithm || "SHA1",
         digits || 6,
-        period || 30
+        period || 30,
+        finalVisibility,
+        user.username
       )
 
     // Generate initial TOTP code
@@ -129,6 +176,8 @@ export async function POST(request: NextRequest) {
         algorithm: algorithm || "SHA1",
         digits: digits || 6,
         period: period || 30,
+        visibility: finalVisibility,
+        created_by: user.username,
       },
     })
   } catch (error: any) {

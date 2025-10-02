@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { AccountCard } from "@/components/account-card"
 import { AddAccountDialog } from "@/components/add-account-dialog"
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { apiClient } from "@/lib/api-client"
 import { Account, User } from "@/types"
-import { LogOut, Plus, Shield } from "lucide-react"
+import { LogOut, Plus, Shield, Key, BookOpen } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -15,6 +16,8 @@ export default function DashboardPage() {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
 
   // Load user and accounts
   useEffect(() => {
@@ -80,6 +83,7 @@ export default function DashboardPage() {
         algorithm: newAccount.algorithm,
         digits: newAccount.digits,
         period: newAccount.period,
+        visibility: newAccount.visibility,
       })
       setAccounts([...accounts, account])
       setIsAddDialogOpen(false)
@@ -88,12 +92,19 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDeleteAccount = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this account?")) return
+  const handleRequestDelete = (account: Account) => {
+    setAccountToDelete(account)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!accountToDelete) return
 
     try {
-      await apiClient.deleteAccount(id)
-      setAccounts(accounts.filter(acc => acc.id !== id))
+      await apiClient.deleteAccount(accountToDelete.id)
+      setAccounts(accounts.filter(acc => acc.id !== accountToDelete.id))
+      setDeleteDialogOpen(false)
+      setAccountToDelete(null)
     } catch (error: any) {
       alert(error.message || "Failed to delete account")
     }
@@ -126,16 +137,40 @@ export default function DashboardPage() {
             account{accounts.length !== 1 ? "s" : ""} configured
           </p>
         </div>
-        {user.role === "admin" && (
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            size="lg"
-            className="gradient-primary hover:opacity-90 shadow-lg shadow-primary/25"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Account
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {user.role === "admin" && (
+            <>
+              <Button
+                onClick={() => router.push("/api-docs")}
+                size="lg"
+                variant="outline"
+                className="shadow-md"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                API Docs
+              </Button>
+              <Button
+                onClick={() => router.push("/api-keys")}
+                size="lg"
+                variant="outline"
+                className="shadow-md"
+              >
+                <Key className="w-4 h-4 mr-2" />
+                API Keys
+              </Button>
+            </>
+          )}
+          {(user.role === "admin" || user.role === "user") && (
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              size="lg"
+              className="gradient-primary hover:opacity-90 shadow-lg shadow-primary/25"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Account
+            </Button>
+          )}
+        </div>
       </div>
 
       {accounts.length === 0 ? (
@@ -147,7 +182,7 @@ export default function DashboardPage() {
           <p className="text-base text-muted-foreground mb-6 max-w-md mx-auto">
             Add your first account to start generating secure TOTP codes
           </p>
-          {user.role === "admin" && (
+          {(user.role === "admin" || user.role === "user") && (
             <Button
               onClick={() => setIsAddDialogOpen(true)}
               size="lg"
@@ -168,7 +203,7 @@ export default function DashboardPage() {
             >
               <AccountCard
                 account={account}
-                onDelete={user.role === "admin" ? handleDeleteAccount : undefined}
+                onRequestDelete={handleRequestDelete}
               />
             </div>
           ))}
@@ -180,6 +215,15 @@ export default function DashboardPage() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onAdd={handleAddAccount}
+        userRole={user?.role || "user"}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        account={accountToDelete}
       />
     </div>
   )
