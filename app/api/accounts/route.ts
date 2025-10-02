@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, requireAdmin } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { generateTOTP, encryptSecret, decryptSecret, validateSecret, parseOtpAuthUrl } from "@/lib/totp"
+import { logAudit } from "@/lib/audit"
 import { z } from "zod"
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "change-this-encryption-key-in-production"
@@ -165,6 +166,14 @@ export async function POST(request: NextRequest) {
       digits,
       period,
     })
+
+    // Log account creation
+    logAudit({
+      username: user.username,
+      action: "account_created",
+      resource: `account_${result.lastInsertRowid}`,
+      details: `Created TOTP account: ${issuer ? issuer + ":" : ""}${label} (${finalVisibility})`,
+    }, request)
 
     return NextResponse.json({
       account: {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { getDb } from "@/lib/db"
+import { logAudit } from "@/lib/audit"
 
 // DELETE /api/api-keys/[id] - Delete/revoke API key
 export async function DELETE(
@@ -25,7 +26,7 @@ export async function DELETE(
     // Check if API key exists and belongs to user
     const apiKey = db
       .prepare(
-        `SELECT ak.id
+        `SELECT ak.id, ak.name
          FROM api_keys ak
          JOIN users u ON ak.user_id = u.id
          WHERE ak.id = ? AND u.username = ?`
@@ -41,6 +42,14 @@ export async function DELETE(
 
     // Delete API key
     db.prepare("DELETE FROM api_keys WHERE id = ?").run(keyId)
+
+    // Log API key deletion
+    logAudit({
+      username: user.username,
+      action: "api_key_deleted",
+      resource: `api_key_${keyId}`,
+      details: `Deleted API key: ${apiKey.name}`,
+    }, request)
 
     return NextResponse.json({ message: "API key deleted successfully" })
   } catch (error: any) {
@@ -85,7 +94,7 @@ export async function PATCH(
     // Check if API key exists and belongs to user
     const apiKey = db
       .prepare(
-        `SELECT ak.id
+        `SELECT ak.id, ak.name
          FROM api_keys ak
          JOIN users u ON ak.user_id = u.id
          WHERE ak.id = ? AND u.username = ?`
@@ -101,6 +110,14 @@ export async function PATCH(
 
     // Update active status
     db.prepare("UPDATE api_keys SET is_active = ? WHERE id = ?").run(is_active, keyId)
+
+    // Log API key status change
+    logAudit({
+      username: user.username,
+      action: "api_key_updated",
+      resource: `api_key_${keyId}`,
+      details: `${is_active ? "Activated" : "Deactivated"} API key: ${apiKey.name}`,
+    }, request)
 
     return NextResponse.json({
       message: is_active ? "API key activated" : "API key deactivated",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { getDb } from "@/lib/db"
+import { logAudit } from "@/lib/audit"
 import { z } from "zod"
 
 const patchAccountSchema = z.object({
@@ -56,6 +57,14 @@ export async function PATCH(
       accountId
     )
 
+    // Log account update
+    logAudit({
+      username: user.username,
+      action: "account_updated",
+      resource: `account_${accountId}`,
+      details: `Updated visibility: ${account.visibility} → ${visibility} for ${account.issuer ? account.issuer + ":" : ""}${account.label}`,
+    }, request)
+
     return NextResponse.json({
       account: {
         id: account.id,
@@ -103,7 +112,7 @@ export async function DELETE(
 
     // Check if account exists and get ownership
     const account = db
-      .prepare("SELECT id, created_by FROM accounts WHERE id = ?")
+      .prepare("SELECT id, label, issuer, created_by FROM accounts WHERE id = ?")
       .get(accountId) as any
 
     if (!account) {
@@ -122,6 +131,14 @@ export async function DELETE(
 
     // Delete account
     db.prepare("DELETE FROM accounts WHERE id = ?").run(accountId)
+
+    // Log account deletion
+    logAudit({
+      username: user.username,
+      action: "account_deleted",
+      resource: `account_${accountId}`,
+      details: `Deleted TOTP account: ${account.issuer ? account.issuer + ":" : ""}${account.label}`,
+    }, request)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, requireAdmin } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { generateApiKey } from "@/lib/api-auth"
+import { logAudit } from "@/lib/audit"
 import { z } from "zod"
 
 const createApiKeySchema = z.object({
@@ -96,6 +97,14 @@ export async function POST(request: NextRequest) {
          VALUES (?, ?, ?, ?)`
       )
       .run(userRecord.id, apiKey, name, expiresAt)
+
+    // Log API key creation
+    logAudit({
+      username: user.username,
+      action: "api_key_created",
+      resource: `api_key_${result.lastInsertRowid}`,
+      details: `Created API key: ${name}${expiresAt ? ` (expires in ${expires_in_days} days)` : " (no expiration)"}`,
+    }, request)
 
     return NextResponse.json({
       apiKey: {

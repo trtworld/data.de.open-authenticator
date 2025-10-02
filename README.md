@@ -48,6 +48,24 @@
 
 ---
 
+## 🏢 Enterprise Deployment
+
+**For corporate/production deployments (TRT, enterprises, organizations):**
+
+📘 **[TRT Deployment Guide](TRT_DEPLOYMENT.md)** - Complete corporate deployment with SSL, backup, monitoring
+
+⚡ **[TRT Quick Start](TRT_QUICK_START.md)** - 60-minute production deployment guide
+
+Includes:
+- SSL/HTTPS setup with corporate certificates
+- Nginx reverse proxy configuration
+- Automated backup strategies
+- User management workflows
+- Security hardening
+- Audit logging and monitoring
+
+---
+
 ## 📋 Quick Start
 
 ### Prerequisites

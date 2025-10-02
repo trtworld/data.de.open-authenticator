@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies
-RUN apk add --no-cache wget
+# Install dependencies (including cron and sqlite for audit log cleanup)
+RUN apk add --no-cache wget dcron sqlite
 
 # Copy package files
 COPY package*.json ./
@@ -17,10 +17,17 @@ COPY . .
 # Build application
 RUN npm run build
 
+# Copy scripts before building
+COPY scripts/cleanup-audit-logs.sh scripts/cleanup-audit-logs.sh
+COPY scripts/entrypoint.sh scripts/entrypoint.sh
+RUN chmod +x scripts/*.sh
+
 # Copy static files to standalone directory
 RUN cp -r .next/static .next/standalone/.next/static && \
     mkdir -p .next/standalone/public && \
-    cp -r public/* .next/standalone/public/ 2>/dev/null || true
+    cp -r public/* .next/standalone/public/ 2>/dev/null || true && \
+    mkdir -p .next/standalone/scripts && \
+    cp scripts/*.sh .next/standalone/scripts/
 
 # Create data directory
 RUN mkdir -p /app/data
@@ -30,6 +37,8 @@ EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV AUDIT_RETENTION_DAYS=30
 
-# Start application using standalone server
-CMD ["node", ".next/standalone/server.js"]
+# Use entrypoint script to set up cron and start app
+WORKDIR /app/.next/standalone
+CMD ["/app/.next/standalone/scripts/entrypoint.sh"]

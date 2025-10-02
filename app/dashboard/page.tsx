@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { AccountCard } from "@/components/account-card"
 import { AddAccountDialog } from "@/components/add-account-dialog"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { apiClient } from "@/lib/api-client"
 import { Account, User } from "@/types"
-import { LogOut, Plus, Shield, Key, BookOpen } from "lucide-react"
+import { LogOut, Plus, Shield, Key, BookOpen, Search, X, Activity } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -18,6 +19,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedIssuer, setSelectedIssuer] = useState<string>("all")
 
   // Load user and accounts
   useEffect(() => {
@@ -110,6 +113,30 @@ export default function DashboardPage() {
     }
   }
 
+  // Get unique issuers for filter
+  const uniqueIssuers = useMemo(() => {
+    const issuers = new Set<string>()
+    accounts.forEach(acc => {
+      if (acc.issuer) issuers.add(acc.issuer)
+    })
+    return Array.from(issuers).sort()
+  }, [accounts])
+
+  // Filter accounts based on search and issuer
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter(account => {
+      // Search filter
+      const matchesSearch = searchQuery === "" ||
+        account.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (account.issuer && account.issuer.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      // Issuer filter
+      const matchesIssuer = selectedIssuer === "all" || account.issuer === selectedIssuer
+
+      return matchesSearch && matchesIssuer
+    })
+  }, [accounts, searchQuery, selectedIssuer])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -132,14 +159,28 @@ export default function DashboardPage() {
           </h2>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
             <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
-              {accounts.length}
+              {filteredAccounts.length}
             </span>
-            account{accounts.length !== 1 ? "s" : ""} configured
+            {filteredAccounts.length !== accounts.length && (
+              <span className="text-xs">
+                of {accounts.length}
+              </span>
+            )}
+            account{filteredAccounts.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {user.role === "admin" && (
             <>
+              <Button
+                onClick={() => router.push("/audit-logs")}
+                size="lg"
+                variant="outline"
+                className="shadow-md"
+              >
+                <Activity className="w-4 h-4 mr-2" />
+                Audit Logs
+              </Button>
               <Button
                 onClick={() => router.push("/api-docs")}
                 size="lg"
@@ -173,6 +214,81 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Search and Filter Section */}
+      {accounts.length > 0 && (
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by label or issuer..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Issuer Filter */}
+            {uniqueIssuers.length > 0 && (
+              <select
+                value={selectedIssuer}
+                onChange={(e) => setSelectedIssuer(e.target.value)}
+                className="px-4 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
+              >
+                <option value="all">All Issuers ({accounts.length})</option>
+                {uniqueIssuers.map(issuer => (
+                  <option key={issuer} value={issuer}>
+                    {issuer} ({accounts.filter(a => a.issuer === issuer).length})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchQuery || selectedIssuer !== "all") && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Active filters:</span>
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary">
+                  Search: "{searchQuery}"
+                  <button onClick={() => setSearchQuery("")} className="hover:text-primary/70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {selectedIssuer !== "all" && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary">
+                  Issuer: {selectedIssuer}
+                  <button onClick={() => setSelectedIssuer("all")} className="hover:text-primary/70">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setSearchQuery("")
+                  setSelectedIssuer("all")
+                }}
+                className="text-muted-foreground hover:text-foreground underline ml-2"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {accounts.length === 0 ? (
         <div className="text-center py-16 sm:py-20 animate-slide-up">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 mb-6">
@@ -193,9 +309,28 @@ export default function DashboardPage() {
             </Button>
           )}
         </div>
+      ) : filteredAccounts.length === 0 ? (
+        <div className="text-center py-16 sm:py-20 animate-slide-up">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 mb-6">
+            <Search className="w-10 h-10 text-yellow-600" />
+          </div>
+          <h3 className="text-xl sm:text-2xl font-bold mb-2 text-foreground">No accounts found</h3>
+          <p className="text-base text-muted-foreground mb-6 max-w-md mx-auto">
+            Try adjusting your search or filters
+          </p>
+          <Button
+            onClick={() => {
+              setSearchQuery("")
+              setSelectedIssuer("all")
+            }}
+            variant="outline"
+          >
+            Clear Filters
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 animate-slide-up">
-          {accounts.map((account, index) => (
+          {filteredAccounts.map((account, index) => (
             <div
               key={account.id}
               style={{ animationDelay: `${index * 50}ms` }}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { authenticate, createSession } from "@/lib/auth"
 import { cookies } from "next/headers"
+import { logAudit } from "@/lib/audit"
 import { z } from "zod"
 
 const loginSchema = z.object({
@@ -17,6 +18,14 @@ export async function POST(request: NextRequest) {
     const user = await authenticate(username, password)
 
     if (!user) {
+      // Log failed login attempt
+      logAudit({
+        username: username,
+        action: "login_failed",
+        resource: "auth",
+        details: `Failed login attempt for user: ${username}`,
+      }, request)
+
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
@@ -35,6 +44,14 @@ export async function POST(request: NextRequest) {
       maxAge: 24 * 60 * 60, // 24 hours
       path: "/",
     })
+
+    // Log successful login
+    logAudit({
+      username: user.username,
+      action: "login_success",
+      resource: "auth",
+      details: `User logged in successfully (role: ${user.role})`,
+    }, request)
 
     return NextResponse.json({
       user: {

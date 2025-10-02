@@ -42,11 +42,14 @@ export function logAudit(entry: AuditLogEntry, request?: NextRequest) {
 export function getAuditLogs(params: {
   username?: string
   action?: string
+  resource?: string
+  startDate?: number
+  endDate?: number
   limit?: number
   offset?: number
 }) {
   const db = getDb()
-  const { username, action, limit = 100, offset = 0 } = params
+  const { username, action, resource, startDate, endDate, limit = 100, offset = 0 } = params
 
   let query = "SELECT * FROM audit_logs WHERE 1=1"
   const queryParams: any[] = []
@@ -61,8 +64,99 @@ export function getAuditLogs(params: {
     queryParams.push(action)
   }
 
+  if (resource) {
+    query += " AND resource LIKE ?"
+    queryParams.push(`%${resource}%`)
+  }
+
+  if (startDate) {
+    query += " AND timestamp >= ?"
+    queryParams.push(startDate)
+  }
+
+  if (endDate) {
+    query += " AND timestamp <= ?"
+    queryParams.push(endDate)
+  }
+
   query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
   queryParams.push(limit, offset)
 
   return db.prepare(query).all(...queryParams)
+}
+
+/**
+ * Get audit log statistics
+ */
+export function getAuditStats() {
+  const db = getDb()
+
+  const totalLogs = db.prepare("SELECT COUNT(*) as count FROM audit_logs").get() as { count: number }
+
+  const recentActivity = db.prepare(`
+    SELECT action, COUNT(*) as count
+    FROM audit_logs
+    WHERE timestamp > unixepoch() - 86400
+    GROUP BY action
+    ORDER BY count DESC
+  `).all()
+
+  const topUsers = db.prepare(`
+    SELECT username, COUNT(*) as count
+    FROM audit_logs
+    WHERE timestamp > unixepoch() - 604800
+    GROUP BY username
+    ORDER BY count DESC
+    LIMIT 10
+  `).all()
+
+  return {
+    total: totalLogs.count,
+    last24Hours: recentActivity,
+    topUsersLastWeek: topUsers,
+  }
+}
+
+/**
+ * Clean old audit logs (retention policy)
+ */
+export function cleanOldAuditLogs(daysToKeep: number = 90) {
+  const db = getDb()
+  const cutoffTimestamp = Math.floor(Date.now() / 1000) - daysToKeep * 86400
+
+  const result = db.prepare(
+    "DELETE FROM audit_logs WHERE timestamp < ?"
+  ).run(cutoffTimestamp)
+
+  return result.changes
+}
+
+// Common audit actions
+export const AuditActions = {
+  // Authentication
+  LOGIN_SUCCESS: "login_success",
+  LOGIN_FAILED: "login_failed",
+  LOGOUT: "logout",
+
+  // Account operations
+  ACCOUNT_CREATED: "account_created",
+  ACCOUNT_UPDATED: "account_updated",
+  ACCOUNT_DELETED: "account_deleted",
+  ACCOUNT_VIEWED: "account_viewed",
+  TOTP_GENERATED: "totp_generated",
+
+  // User management
+  USER_CREATED: "user_created",
+  USER_UPDATED: "user_updated",
+  USER_DELETED: "user_deleted",
+  USER_ROLE_CHANGED: "user_role_changed",
+
+  // API operations
+  API_KEY_CREATED: "api_key_created",
+  API_KEY_DELETED: "api_key_deleted",
+  API_REQUEST: "api_request",
+
+  // System operations
+  BACKUP_DOWNLOADED: "backup_downloaded",
+  SETTINGS_CHANGED: "settings_changed",
 }

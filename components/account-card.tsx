@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Account } from "@/types"
-import { Copy, Trash2, Check, Clock, Users, Lock } from "lucide-react"
+import { Copy, Trash2, Check, Clock, Users, Lock, Eye, EyeOff } from "lucide-react"
 
 interface AccountCardProps {
   account: Account
@@ -14,8 +14,14 @@ interface AccountCardProps {
 
 export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardProps) {
   const [copied, setCopied] = useState(false)
+  const [idCopied, setIdCopied] = useState(false)
+  const [isCodeVisible, setIsCodeVisible] = useState(false)
 
   const handleCopy = async () => {
+    // Automatically reveal code when copying
+    if (!isCodeVisible) {
+      await toggleCodeVisibility()
+    }
     await navigator.clipboard.writeText(account.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -29,13 +35,34 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
     }
   }
 
-  const [idCopied, setIdCopied] = useState(false)
-
   const handleCopyId = async (e: React.MouseEvent) => {
     e.stopPropagation()
     await navigator.clipboard.writeText(account.id.toString())
     setIdCopied(true)
     setTimeout(() => setIdCopied(false), 2000)
+  }
+
+  const toggleCodeVisibility = async () => {
+    const newVisibility = !isCodeVisible
+    setIsCodeVisible(newVisibility)
+
+    // Log to audit when code is revealed
+    if (newVisibility) {
+      try {
+        await fetch("/api/audit/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            action: "totp_viewed",
+            resource: `account_${account.id}`,
+            details: `Viewed TOTP code for ${account.issuer || ""}:${account.label}`,
+          }),
+        })
+      } catch (error) {
+        console.error("Failed to log TOTP view:", error)
+      }
+    }
   }
 
   const progressPercentage = (account.timeRemaining / 30) * 100
@@ -110,7 +137,7 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
         {/* TOTP Code */}
         <div className="mb-4 relative">
           <div
-            className={`text-3xl sm:text-4xl font-mono font-bold tracking-wider text-center py-4 sm:py-6 select-all rounded-xl transition-all duration-300 ${
+            className={`relative text-3xl sm:text-4xl font-mono font-bold tracking-wider text-center py-4 sm:py-6 select-all rounded-xl transition-all duration-300 ${
               isUrgent
                 ? "bg-destructive/10 text-destructive animate-pulse"
                 : isWarning
@@ -118,9 +145,28 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
                 : "bg-primary/5 text-primary"
             }`}
           >
-            <span className="inline-block">{account.code.slice(0, 3)}</span>
-            {" "}
-            <span className="inline-block">{account.code.slice(3)}</span>
+            {isCodeVisible ? (
+              <>
+                <span className="inline-block">{account.code.slice(0, 3)}</span>
+                {" "}
+                <span className="inline-block">{account.code.slice(3)}</span>
+              </>
+            ) : (
+              <span className="inline-block select-none">••• •••</span>
+            )}
+
+            {/* Eye Icon Toggle */}
+            <button
+              onClick={toggleCodeVisibility}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 rounded-lg hover:bg-white/10 dark:hover:bg-black/10 transition-colors"
+              title={isCodeVisible ? "Hide code" : "Show code"}
+            >
+              {isCodeVisible ? (
+                <EyeOff className="w-5 h-5 opacity-50 hover:opacity-100 transition-opacity" />
+              ) : (
+                <Eye className="w-5 h-5 opacity-50 hover:opacity-100 transition-opacity" />
+              )}
+            </button>
           </div>
         </div>
 
