@@ -3,6 +3,7 @@ import { requireAuth, requireAdmin } from "@/lib/auth"
 import { getDb } from "@/lib/db"
 import { generateTOTP, encryptSecret, decryptSecret, validateSecret, parseOtpAuthUrl } from "@/lib/totp"
 import { logAudit } from "@/lib/audit"
+import { detectIconFromIssuer } from "@/lib/db-migrations"
 import { z } from "zod"
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "change-this-encryption-key-in-production"
@@ -34,18 +35,9 @@ export async function GET(request: NextRequest) {
     const params: any[] = []
 
     // Visibility filtering based on role
-    if (user.role === "admin") {
-      // Admin: All team accounts + own private accounts
-      whereClause = "(visibility = 'team' OR created_by = ?)"
-      params.push(user.username)
-    } else if (user.role === "viewer") {
-      // Viewer: Only admin's team accounts
-      whereClause = "(visibility = 'team' AND created_by IN (SELECT username FROM users WHERE role = 'admin'))"
-    } else {
-      // User: Only own accounts
-      whereClause = "created_by = ?"
-      params.push(user.username)
-    }
+    // Both admin and user: All team accounts + own private accounts
+    whereClause = "(visibility = 'team' OR created_by = ?)"
+    params.push(user.username)
 
     // Add issuer filter
     if (issuer) {
@@ -59,14 +51,23 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`, `%${search}%`)
     }
 
+    // Get user ID for favorites check
+    const userRecord = db.prepare("SELECT id FROM users WHERE username = ?").get(user.username) as { id: number } | undefined
+    const userId = userRecord?.id || 0
+
     const accounts = db
       .prepare(
-        `SELECT id, label, issuer, secret, algorithm, digits, period, visibility, created_by
-         FROM accounts
+        `SELECT
+          a.id, a.label, a.issuer, a.secret, a.algorithm, a.digits, a.period,
+          a.visibility, a.created_by, a.icon_identifier, a.category,
+          a.view_count, a.copy_count,
+          CASE WHEN f.user_id IS NOT NULL THEN 1 ELSE 0 END as is_favorite
+         FROM accounts a
+         LEFT JOIN favorites f ON a.id = f.account_id AND f.user_id = ?
          WHERE ${whereClause}
-         ORDER BY created_at DESC`
+         ORDER BY is_favorite DESC, a.created_at DESC`
       )
-      .all(...params) as any[]
+      .all(userId, ...params) as any[]
 
     // Generate current TOTP codes
     const accountsWithCodes = accounts.map((account) => {
@@ -90,6 +91,11 @@ export async function GET(request: NextRequest) {
         period: account.period,
         visibility: account.visibility || "team",
         created_by: account.created_by,
+        icon_identifier: account.icon_identifier,
+        category: account.category,
+        is_favorite: account.is_favorite === 1,
+        view_count: account.view_count || 0,
+        copy_count: account.copy_count || 0,
       }
     })
 
@@ -135,18 +141,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // User role can only create private accounts
+    // Only admin can create team accounts, user can only create private
     const finalVisibility = user.role === "user" ? "private" : (visibility || "team")
 
     // Encrypt secret
     const encryptedSecret = encryptSecret(secret, ENCRYPTION_KEY)
 
+    // Auto-detect icon identifier from issuer
+    const iconIdentifier = detectIconFromIssuer(issuer || null)
+
     // Insert into database
     const db = getDb()
     const result = db
       .prepare(
-        `INSERT INTO accounts (label, issuer, secret, algorithm, digits, period, visibility, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO accounts (label, issuer, secret, algorithm, digits, period, visibility, created_by, icon_identifier)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         label,
@@ -156,7 +165,8 @@ export async function POST(request: NextRequest) {
         digits || 6,
         period || 30,
         finalVisibility,
-        user.username
+        user.username,
+        iconIdentifier
       )
 
     // Generate initial TOTP code
@@ -187,6 +197,8 @@ export async function POST(request: NextRequest) {
         period: period || 30,
         visibility: finalVisibility,
         created_by: user.username,
+        icon_identifier: iconIdentifier,
+        is_favorite: false,
       },
     })
   } catch (error: any) {

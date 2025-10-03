@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { apiClient } from "@/lib/api-client"
 import { User } from "@/types"
 import {
@@ -51,6 +58,13 @@ export default function AuditLogsPage() {
   const [offset, setOffset] = useState(0)
   const [isCleaning, setIsCleaning] = useState(false)
 
+  // Autocomplete states
+  const [availableActions, setAvailableActions] = useState<string[]>([])
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([])
+  const [resourceSuggestions, setResourceSuggestions] = useState<string[]>([])
+  const [showUsernameSuggestions, setShowUsernameSuggestions] = useState(false)
+  const [showResourceSuggestions, setShowResourceSuggestions] = useState(false)
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -76,6 +90,13 @@ export default function AuditLogsPage() {
         })
         const statsData = await statsResponse.json()
         setStats(statsData)
+
+        // Load available actions
+        const actionsResponse = await fetch("/api/audit?autocomplete=actions", {
+          credentials: "include",
+        })
+        const actionsData = await actionsResponse.json()
+        setAvailableActions(actionsData.actions || [])
       } catch (error) {
         console.error("Failed to load audit logs:", error)
       } finally {
@@ -120,6 +141,47 @@ export default function AuditLogsPage() {
   const handleSearch = () => {
     setOffset(0)
     loadAuditLogs()
+  }
+
+  const fetchUsernameSuggestions = async (query: string) => {
+    if (query.length < 3) {
+      setUsernameSuggestions([])
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/audit?autocomplete=usernames&q=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      })
+      const data = await response.json()
+      setUsernameSuggestions(data.usernames || [])
+      setShowUsernameSuggestions(true)
+    } catch (error) {
+      console.error("Failed to fetch username suggestions:", error)
+    }
+  }
+
+  const fetchResourceSuggestions = async (query: string) => {
+    console.log("[DEBUG] fetchResourceSuggestions called with query:", query)
+    if (query.length < 3) {
+      console.log("[DEBUG] Query too short, clearing suggestions")
+      setResourceSuggestions([])
+      return
+    }
+
+    try {
+      console.log("[DEBUG] Fetching from API...")
+      const response = await fetch(`/api/audit?autocomplete=resources&q=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      })
+      const data = await response.json()
+      console.log("[DEBUG] API response:", data)
+      setResourceSuggestions(data.resources || [])
+      setShowResourceSuggestions(true)
+      console.log("[DEBUG] Set suggestions to:", data.resources || [])
+    } catch (error) {
+      console.error("Failed to fetch resource suggestions:", error)
+    }
   }
 
   const handleCleanup = async () => {
@@ -261,40 +323,89 @@ export default function AuditLogsPage() {
             <div className="space-y-4">
               {/* First Row: Username, Action, Resource */}
               <div className="flex flex-col sm:flex-row gap-3">
+                {/* Username Autocomplete */}
                 <div className="relative flex-1">
-                  <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                   <Input
                     type="text"
-                    placeholder="Username..."
+                    placeholder="Username (min 3 chars)..."
                     value={searchUsername}
-                    onChange={(e) => setSearchUsername(e.target.value)}
+                    onChange={(e) => {
+                      setSearchUsername(e.target.value)
+                      fetchUsernameSuggestions(e.target.value)
+                    }}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    onFocus={() => searchUsername.length >= 3 && setShowUsernameSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowUsernameSuggestions(false), 200)}
                     className="pl-10"
                   />
+                  {showUsernameSuggestions && usernameSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {usernameSuggestions.map((username) => (
+                        <div
+                          key={username}
+                          className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                          onClick={() => {
+                            setSearchUsername(username)
+                            setShowUsernameSuggestions(false)
+                          }}
+                        >
+                          {username}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="relative flex-1">
-                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Action (e.g., totp_viewed)..."
-                    value={searchAction}
-                    onChange={(e) => setSearchAction(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                    className="pl-10"
-                  />
+                {/* Action Select */}
+                <div className="flex-1">
+                  <Select value={searchAction} onValueChange={setSearchAction}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select action..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=" ">All Actions</SelectItem>
+                      {availableActions.map((action) => (
+                        <SelectItem key={action} value={action}>
+                          {action}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
+                {/* Resource Autocomplete */}
                 <div className="relative flex-1">
-                  <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
                   <Input
                     type="text"
-                    placeholder="TOTP Account (e.g., account_5)..."
+                    placeholder="Account/Resource (min 3 chars)..."
                     value={searchResource}
-                    onChange={(e) => setSearchResource(e.target.value)}
+                    onChange={(e) => {
+                      setSearchResource(e.target.value)
+                      fetchResourceSuggestions(e.target.value)
+                    }}
                     onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    onFocus={() => searchResource.length >= 3 && setShowResourceSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowResourceSuggestions(false), 200)}
                     className="pl-10"
                   />
+                  {showResourceSuggestions && resourceSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {resourceSuggestions.map((resource) => (
+                        <div
+                          key={resource}
+                          className="px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer text-sm"
+                          onClick={() => {
+                            setSearchResource(resource)
+                            setShowResourceSuggestions(false)
+                          }}
+                        >
+                          {resource}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -327,16 +438,18 @@ export default function AuditLogsPage() {
                   Search
                 </Button>
 
-                {(searchUsername || searchAction || searchResource || startDate || endDate) && (
+                {(searchUsername || searchAction.trim() || searchResource || startDate || endDate) && (
                   <Button
                     variant="outline"
                     onClick={() => {
                       setSearchUsername("")
-                      setSearchAction("")
+                      setSearchAction(" ")
                       setSearchResource("")
                       setStartDate("")
                       setEndDate("")
                       setOffset(0)
+                      setUsernameSuggestions([])
+                      setResourceSuggestions([])
                       setTimeout(loadAuditLogs, 100)
                     }}
                     className="sm:w-auto"

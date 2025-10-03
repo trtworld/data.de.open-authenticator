@@ -20,9 +20,9 @@
 ### 🔒 Security First
 - **Self-hosted** - Your secrets stay on your infrastructure
 - **Encrypted storage** - All TOTP secrets encrypted at rest (AES-256)
-- **Role-based access** - Admin, Viewer, and User roles
+- **Role-based access** - Admin and User roles with fine-grained permissions
 - **Session management** - Secure JWT-based authentication (24h sessions)
-- **Audit logging** - Track all account operations
+- **Audit logging** - Track all account operations with detailed logs
 
 ### 👥 Team Collaboration
 - **Team accounts** - Share TOTP codes with your team
@@ -31,7 +31,10 @@
 - **User management** - Admins can create/manage team members
 
 ### 🎯 User Experience
-- **Real-time TOTP generation** - Live countdown timers
+- **Real-time TOTP generation** - Live countdown timers with visual indicators
+- **Brand icons** - Auto-detection for 2,800+ services (GitHub, Google, AWS, etc.)
+- **Favorite system** - Star important accounts for quick access
+- **Skeleton loaders** - Beautiful loading states with shimmer animations
 - **Quick search** - Find accounts instantly
 - **Issuer filtering** - Filter by service provider
 - **QR code import** - Upload or paste QR codes
@@ -92,7 +95,6 @@ Edit `.env` to customize:
 ```env
 # Admin credentials (CHANGE IN PRODUCTION!)
 ADMIN_PASSWORD=your-secure-admin-password
-VIEWER_PASSWORD=your-secure-viewer-password
 
 # Security keys (GENERATE RANDOM 32+ character strings!)
 JWT_SECRET=your-jwt-secret-key-change-in-production
@@ -115,7 +117,9 @@ http://localhost:3000
 
 **Default credentials:**
 - Username: `admin`
-- Password: `actrt123admin` (or your configured `ADMIN_PASSWORD`)
+- Password: `admin` (or your configured `ADMIN_PASSWORD`)
+
+⚠️ **Security Note**: Change the default password immediately in production!
 
 ---
 
@@ -256,7 +260,6 @@ services:
       - ./data:/app/data
     environment:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
-      - VIEWER_PASSWORD=${VIEWER_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     restart: unless-stopped
@@ -270,10 +273,9 @@ services:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `ADMIN_PASSWORD` | Yes | `actrt123admin` | Admin user password |
-| `VIEWER_PASSWORD` | Yes | `actrt123viewer` | Viewer user password |
-| `JWT_SECRET` | Yes | Random | JWT signing secret (32+ chars) |
-| `ENCRYPTION_KEY` | Yes | Random | TOTP secret encryption key (32 chars) |
+| `ADMIN_PASSWORD` | Yes | `admin` | Admin user password (CHANGE IN PRODUCTION!) |
+| `JWT_SECRET` | Yes | Random | JWT signing secret (32+ chars recommended) |
+| `ENCRYPTION_KEY` | Yes | Random | TOTP secret encryption key (32 chars minimum) |
 | `PORT` | No | `3000` | Application port |
 | `NODE_ENV` | No | `production` | Node environment |
 
@@ -557,14 +559,29 @@ docker logs otto-tp | grep "Next.js"
 
 | Username | Role | Default Password |
 |----------|------|------------------|
-| `admin` | Admin | `actrt123admin` |
-| `viewer` | Viewer | `actrt123viewer` |
+| `admin` | Admin | `admin` |
+
+⚠️ **Change the default password immediately after first login!**
 
 ### Roles Explained
 
-- **Admin**: Full access - manage accounts, users, visibility, backups
-- **Viewer**: Read-only access - view team accounts, own private accounts
-- **User**: Standard access - view team accounts, own private accounts
+- **Admin**
+  - ✅ Create and manage team accounts (visible to all users)
+  - ✅ Create and manage private accounts (visible only to themselves)
+  - ✅ Create and manage users
+  - ✅ Access audit logs
+  - ✅ Generate API keys
+  - ✅ Download database backups
+  - ✅ Full system access
+
+- **User**
+  - ✅ View all team accounts (created by admins)
+  - ✅ Create and manage private accounts (visible only to themselves)
+  - ✅ Star/favorite important accounts
+  - ❌ Cannot create team accounts
+  - ❌ Cannot manage users
+  - ❌ Cannot access audit logs
+  - ❌ Cannot generate API keys
 
 ### Create New Users
 

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('admin', 'viewer', 'user')),
+  role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
   created_by TEXT,
   created_at INTEGER DEFAULT (unixepoch()),
   updated_at INTEGER DEFAULT (unixepoch()),
@@ -38,7 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 CREATE TABLE IF NOT EXISTS sessions (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('admin', 'viewer', 'user')),
+  role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
   expires_at INTEGER NOT NULL,
   created_at INTEGER DEFAULT (unixepoch())
 );

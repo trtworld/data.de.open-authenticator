@@ -25,7 +25,7 @@ interface AddAccountDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onAdd: (account: Omit<Account, "id" | "code" | "timeRemaining">) => void
-  userRole: "admin" | "viewer" | "user"
+  userRole: "admin" | "user"
 }
 
 export function AddAccountDialog({ open, onOpenChange, onAdd, userRole }: AddAccountDialogProps) {

@@ -6,7 +6,7 @@ import { getDb } from "../db"
 
 export interface User {
   username: string
-  role: "admin" | "viewer" | "user"
+  role: "admin" | "user"
 }
 
 export interface Session extends User {
@@ -18,7 +18,7 @@ export interface DbUser {
   id: number
   username: string
   password_hash: string
-  role: "admin" | "viewer" | "user"
+  role: "admin" | "user"
   is_active: number
 }
 
@@ -33,12 +33,10 @@ const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 async function initializeDefaultUsers() {
   const db = getDb()
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "actrt123admin"
-  const viewerPassword = process.env.VIEWER_PASSWORD || "actrt123viewer"
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin"
 
-  // Check if users already exist
+  // Check if admin user exists
   const adminExists = db.prepare("SELECT 1 FROM users WHERE username = ?").get("admin")
-  const viewerExists = db.prepare("SELECT 1 FROM users WHERE username = ?").get("viewer")
 
   if (!adminExists) {
     const adminHash = await bcrypt.hash(adminPassword, 10)
@@ -46,14 +44,6 @@ async function initializeDefaultUsers() {
       INSERT INTO users (username, password_hash, role, created_by, is_active)
       VALUES (?, ?, 'admin', 'system', 1)
     `).run("admin", adminHash)
-  }
-
-  if (!viewerExists) {
-    const viewerHash = await bcrypt.hash(viewerPassword, 10)
-    db.prepare(`
-      INSERT INTO users (username, password_hash, role, created_by, is_active)
-      VALUES (?, ?, 'viewer', 'system', 1)
-    `).run("viewer", viewerHash)
   }
 }
 
@@ -113,7 +103,7 @@ export async function verifySession(token: string): Promise<User | null> {
 
     return {
       username: payload.username as string,
-      role: payload.role as "admin" | "viewer" | "user",
+      role: payload.role as "admin" | "user",
     }
   } catch {
     return null

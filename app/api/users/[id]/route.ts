@@ -17,9 +17,9 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    if (user.username === "admin" || user.username === "viewer") {
+    if (user.username === "admin") {
       return NextResponse.json(
-        { error: "Cannot delete default system users" },
+        { error: "Cannot delete admin user" },
         { status: 403 }
       )
     }

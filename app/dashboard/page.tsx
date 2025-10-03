@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AccountCard } from "@/components/account-card"
+import { AccountCardSkeletonGrid } from "@/components/account-card-skeleton"
 import { AddAccountDialog } from "@/components/add-account-dialog"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
 import { apiClient } from "@/lib/api-client"
@@ -13,6 +14,7 @@ import { LogOut, Plus, Shield, Key, BookOpen, Search, X, Activity } from "lucide
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const [user, setUser] = useState<User | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -67,6 +69,25 @@ export default function DashboardPage() {
     return () => clearInterval(interval)
   }, [accounts.length])
 
+  // Keyboard shortcut: Ctrl+F / Cmd+F to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F or Cmd+F
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+      // Escape to clear search
+      if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+        setSearchQuery("")
+        searchInputRef.current?.blur()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
   const handleLogout = async () => {
     await apiClient.logout()
     router.push("/")
@@ -113,6 +134,15 @@ export default function DashboardPage() {
     }
   }
 
+  const reloadAccounts = async () => {
+    try {
+      const accountsList = await apiClient.getAccounts()
+      setAccounts(accountsList)
+    } catch (error) {
+      console.error("Failed to reload accounts:", error)
+    }
+  }
+
   // Get unique issuers for filter
   const uniqueIssuers = useMemo(() => {
     const issuers = new Set<string>()
@@ -122,9 +152,9 @@ export default function DashboardPage() {
     return Array.from(issuers).sort()
   }, [accounts])
 
-  // Filter accounts based on search and issuer
+  // Filter and sort accounts based on search and issuer
   const filteredAccounts = useMemo(() => {
-    return accounts.filter(account => {
+    const filtered = accounts.filter(account => {
       // Search filter
       const matchesSearch = searchQuery === "" ||
         account.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,15 +165,32 @@ export default function DashboardPage() {
 
       return matchesSearch && matchesIssuer
     })
+
+    // Sort: favorites first, then by popularity (view_count + copy_count)
+    return filtered.sort((a, b) => {
+      // Favorites always come first
+      if (a.is_favorite && !b.is_favorite) return -1
+      if (!a.is_favorite && b.is_favorite) return 1
+
+      // Then sort by popularity (total interactions)
+      const aPopularity = (a.view_count || 0) + (a.copy_count || 0)
+      const bPopularity = (b.view_count || 0) + (b.copy_count || 0)
+      return bPopularity - aPopularity // Descending order
+    })
   }, [accounts, searchQuery, selectedIssuer])
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="text-center">
-          <Shield className="w-12 h-12 mx-auto mb-4 animate-pulse text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+              Your Accounts
+            </h2>
+            <div className="h-6 w-32 bg-muted rounded shimmer mt-2" />
+          </div>
         </div>
+        <AccountCardSkeletonGrid count={6} />
       </div>
     )
   }
@@ -220,18 +267,20 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
               <Input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search by label or issuer..."
+                placeholder="Search accounts... (Ctrl+F)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-11 text-base sm:text-sm shadow-sm"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-accent rounded"
+                  aria-label="Clear search"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -339,6 +388,7 @@ export default function DashboardPage() {
               <AccountCard
                 account={account}
                 onRequestDelete={handleRequestDelete}
+                onFavoriteToggle={reloadAccounts}
               />
             </div>
           ))}

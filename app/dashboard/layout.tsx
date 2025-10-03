@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 import { User } from "@/types"
-import { Settings, Download, UserPlus, KeyRound, Shield, Upload, Github } from "lucide-react"
+import { Settings, Download, UserPlus, KeyRound, Github } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChangePasswordDialog } from "@/components/change-password-dialog"
 import { UserManagementDialog } from "@/components/user-management-dialog"
-import { LogoUploadDialog } from "@/components/logo-upload-dialog"
+import { ToastProvider } from "@/components/ui/toast"
+import Image from "next/image"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -24,9 +25,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [showUsersDialog, setShowUsersDialog] = useState(false)
-  const [showLogoDialog, setShowLogoDialog] = useState(false)
-  const [logoUrl, setLogoUrl] = useState<string>("")
-  const [logoKey, setLogoKey] = useState(0)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -37,28 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       setUser(currentUser)
       setLoading(false)
-      loadLogo()
     }
 
     checkAuth()
   }, [router])
-
-  const loadLogo = () => {
-    fetch(`/api/logo?t=${Date.now()}`, { credentials: "include" })
-      .then(res => {
-        if (res.headers.get("content-type")?.includes("application/json")) {
-          return res.json().then(data => data.url)
-        }
-        return "/api/logo"
-      })
-      .then(url => setLogoUrl(url))
-      .catch(() => setLogoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0qC5LjxaKwXYMFQjLb9VX07dw5-sDc8ERySdSlZOhmXeEXAq9iqaqzKqOxjPuehTIPqY&usqp=CAU"))
-  }
-
-  const handleLogoUpdated = () => {
-    setLogoKey(prev => prev + 1)
-    loadLogo()
-  }
 
   const handleLogout = async () => {
     await apiClient.logout()
@@ -94,30 +74,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <ToastProvider>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       {/* Modern Navigation Bar */}
       <nav className="glass-effect sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo and Title */}
             <div className="flex items-center space-x-3">
-              <div key={logoKey} className="relative h-10 w-10 rounded-xl overflow-hidden bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center ring-2 ring-primary/20 shadow-md">
-                {logoUrl ? (
-                  <img
-                    src={`${logoUrl}?t=${logoKey}`}
-                    alt="Logo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Shield className="w-5 h-5 text-primary" />
-                )}
+              <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-white dark:bg-slate-800 flex items-center justify-center ring-2 ring-primary/20 shadow-md">
+                <Image
+                  src="/logo.png"
+                  alt="Otto-TP Logo"
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-contain p-1"
+                />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-primary via-blue-600 to-purple-600 bg-clip-text text-transparent">
                   Otto-TP
                 </h1>
-                <p className="text-xs text-muted-foreground">
-                  Online Team-based TOTP
+                <p className="text-xs text-muted-foreground font-medium">
+                  Team-Based TOTP Authenticator
                 </p>
               </div>
             </div>
@@ -147,10 +126,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <DropdownMenuItem onClick={() => setShowUsersDialog(true)}>
                       <UserPlus className="w-4 h-4 mr-2" />
                       Manage Users
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowLogoDialog(true)}>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Logo
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleBackup}>
                       <Download className="w-4 h-4 mr-2" />
@@ -224,13 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         open={showUsersDialog}
         onOpenChange={setShowUsersDialog}
       />
-
-      {/* Logo Upload Dialog */}
-      <LogoUploadDialog
-        open={showLogoDialog}
-        onOpenChange={setShowLogoDialog}
-        onLogoUpdated={handleLogoUpdated}
-      />
-    </div>
+      </div>
+    </ToastProvider>
   )
 }

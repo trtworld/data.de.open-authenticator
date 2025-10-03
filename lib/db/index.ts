@@ -1,6 +1,7 @@
 import Database from "better-sqlite3"
 import { readFileSync } from "fs"
 import { join } from "path"
+import { runMigrations } from "../db-migrations"
 
 const DB_PATH = process.env.DB_PATH || join(process.cwd(), "data", "app.db")
 
@@ -20,9 +21,12 @@ export function getDb(): Database.Database {
     db.pragma("journal_mode = WAL")
     db.pragma("foreign_keys = ON")
 
-    // Run migrations
+    // Run initial schema
     const schema = readFileSync(join(process.cwd(), "lib", "db", "schema.sql"), "utf-8")
     db.exec(schema)
+
+    // Run migrations
+    runMigrations()
 
     console.log("✅ Database initialized at:", DB_PATH)
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth"
-import { getAuditLogs, getAuditStats } from "@/lib/audit"
+import { getAuditLogs, getAuditStats, getDistinctUsernames, getDistinctResources, AuditActions } from "@/lib/audit"
 
 /**
  * GET /api/audit - Get audit logs (admin only)
@@ -45,12 +45,36 @@ export async function GET(request: NextRequest) {
     const offset = Math.max(parseInt(searchParams.get("offset") || "0"), 0) // Min 0
 
     const stats = searchParams.get("stats") === "true"
+    const autocomplete = searchParams.get("autocomplete")
 
+    // Return stats
     if (stats) {
       const statistics = getAuditStats()
       return NextResponse.json(statistics)
     }
 
+    // Return autocomplete suggestions
+    if (autocomplete === "usernames") {
+      const query = searchParams.get("q") || ""
+      const usernames = getDistinctUsernames(query)
+      return NextResponse.json({ usernames: usernames.map(u => u.username) })
+    }
+
+    if (autocomplete === "resources") {
+      const query = searchParams.get("q") || ""
+      console.log("[DEBUG] Resource autocomplete query:", query, "length:", query.length)
+      const resources = getDistinctResources(query)
+      console.log("[DEBUG] Found resources:", resources.length, resources)
+      return NextResponse.json({ resources: resources.map(r => r.resource) })
+    }
+
+    // Return available actions
+    if (autocomplete === "actions") {
+      const actions = Object.values(AuditActions)
+      return NextResponse.json({ actions })
+    }
+
+    // Return audit logs
     const logs = getAuditLogs({ username, action, resource, startDate, endDate, limit, offset })
 
     return NextResponse.json({

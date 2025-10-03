@@ -127,9 +127,10 @@ export default function ApiDocsPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="generate" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="generate">Generate TOTP</TabsTrigger>
                 <TabsTrigger value="export">Export Accounts</TabsTrigger>
+                <TabsTrigger value="favorites">Favorites</TabsTrigger>
               </TabsList>
 
               {/* Generate TOTP */}
@@ -362,6 +363,148 @@ export default function ApiDocsPage() {
   "filter": "all"
 }`}
                   />
+                </div>
+              </TabsContent>
+
+              {/* Favorites */}
+              <TabsContent value="favorites" className="space-y-6 mt-6">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg mb-4">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    🔐 Web Session Authentication
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Favorites endpoints use web session authentication (cookies), not API keys. These are designed for web interface integration.
+                  </p>
+                </div>
+
+                {/* Add Favorite */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-sm font-semibold">
+                      POST
+                    </span>
+                    <code className="text-sm">/api/accounts/[id]/favorite</code>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Add an account to your favorites list
+                  </p>
+                </div>
+
+                {/* Parameters */}
+                <div>
+                  <h4 className="font-semibold mb-3">Path Parameters:</h4>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="font-medium text-sm">id <span className="text-muted-foreground">(number, required)</span></p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      The numeric ID of the account to favorite
+                    </p>
+                  </div>
+                </div>
+
+                {/* Add Example */}
+                <div>
+                  <h4 className="font-semibold mb-3">Example Request:</h4>
+                  <CodeBlock
+                    id="fav-add"
+                    code={`curl -X POST \\
+  -H "Content-Type: application/json" \\
+  -H "Cookie: auth-token=your_session_token" \\
+  "http://localhost:3000/api/accounts/15/favorite"`}
+                  />
+                </div>
+
+                {/* Add Response */}
+                <div>
+                  <h4 className="font-semibold mb-3">Success Response:</h4>
+                  <CodeBlock
+                    id="fav-add-response"
+                    language="json"
+                    code={`{
+  "success": true,
+  "is_favorite": true
+}`}
+                  />
+                </div>
+
+                {/* Remove Favorite */}
+                <div className="pt-6 border-t">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded text-sm font-semibold">
+                      DELETE
+                    </span>
+                    <code className="text-sm">/api/accounts/[id]/favorite</code>
+                  </div>
+                  <p className="text-muted-foreground mb-4">
+                    Remove an account from your favorites list
+                  </p>
+                </div>
+
+                {/* Remove Example */}
+                <div>
+                  <h4 className="font-semibold mb-3">Example Request:</h4>
+                  <CodeBlock
+                    id="fav-remove"
+                    code={`curl -X DELETE \\
+  -H "Cookie: auth-token=your_session_token" \\
+  "http://localhost:3000/api/accounts/15/favorite"`}
+                  />
+                </div>
+
+                {/* Remove Response */}
+                <div>
+                  <h4 className="font-semibold mb-3">Success Response:</h4>
+                  <CodeBlock
+                    id="fav-remove-response"
+                    language="json"
+                    code={`{
+  "success": true,
+  "is_favorite": false
+}`}
+                  />
+                </div>
+
+                {/* Common Errors */}
+                <div>
+                  <h4 className="font-semibold mb-3">Common Errors:</h4>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="font-medium text-sm text-red-900 dark:text-red-100">
+                        401 Unauthorized
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        You must be logged in to manage favorites
+                      </p>
+                    </div>
+                    <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="font-medium text-sm text-red-900 dark:text-red-100">
+                        404 Account not found
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        The account doesn't exist or you don't have access to it
+                      </p>
+                    </div>
+                    <div className="p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                      <p className="font-medium text-sm text-red-900 dark:text-red-100">
+                        400 Invalid account ID
+                      </p>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                        The account ID must be a valid number
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Integration Note */}
+                <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
+                    💡 Integration Tips
+                  </p>
+                  <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1 list-disc list-inside">
+                    <li>Favorites are user-specific and persist across sessions</li>
+                    <li>Adding an already favorited account is idempotent (no error)</li>
+                    <li>You can only favorite accounts you have access to (team or your private accounts)</li>
+                    <li>Use the web interface to see your favorited accounts with star indicators</li>
+                  </ul>
                 </div>
               </TabsContent>
             </Tabs>

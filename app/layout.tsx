@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Authenticator TRT - Open Source TOTP Manager",
-  description: "Self-hosted web-based authenticator for managing TOTP codes",
+  title: "Otto-TP - Team-Based TOTP Authenticator",
+  description: "Open source, self-hosted team-based TOTP authenticator for managing two-factor authentication codes",
 };
 
 export default function RootLayout({

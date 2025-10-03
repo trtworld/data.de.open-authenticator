@@ -5,17 +5,22 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Account } from "@/types"
 import { Copy, Trash2, Check, Clock, Users, Lock, Eye, EyeOff } from "lucide-react"
+import { useToast } from "@/components/ui/toast"
+import { AccountIcon } from "@/components/account-icon"
+import { FavoriteButton } from "@/components/favorite-button"
 
 interface AccountCardProps {
   account: Account
   onDelete?: (id: number) => void
   onRequestDelete?: (account: Account) => void
+  onFavoriteToggle?: () => void
 }
 
-export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardProps) {
+export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteToggle }: AccountCardProps) {
   const [copied, setCopied] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
   const [isCodeVisible, setIsCodeVisible] = useState(false)
+  const { addToast } = useToast()
 
   const handleCopy = async () => {
     // Automatically reveal code when copying
@@ -25,6 +30,25 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
     await navigator.clipboard.writeText(account.code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+
+    // Show success toast
+    addToast({
+      variant: "success",
+      title: "✓ Code Copied!",
+      description: `${account.label} - ${account.code}`,
+    })
+
+    // Increment copy count
+    try {
+      await fetch(`/api/accounts/${account.id}/increment`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ type: "copy" }),
+      })
+    } catch (error) {
+      console.error("Failed to increment copy count:", error)
+    }
   }
 
   const handleDeleteClick = () => {
@@ -59,6 +83,14 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
             details: `Viewed TOTP code for ${account.issuer || ""}:${account.label}`,
           }),
         })
+
+        // Increment view count
+        await fetch(`/api/accounts/${account.id}/increment`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ type: "view" }),
+        })
       } catch (error) {
         console.error("Failed to log TOTP view:", error)
       }
@@ -79,6 +111,12 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
+              <AccountIcon
+                iconIdentifier={account.icon_identifier}
+                issuer={account.issuer}
+                label={account.label}
+                className="w-8 h-8 flex-shrink-0"
+              />
               <h3 className="font-bold text-lg truncate bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
                 {account.label}
               </h3>
@@ -122,16 +160,23 @@ export function AccountCard({ account, onDelete, onRequestDelete }: AccountCardP
               </button>
             </div>
           </div>
-          {(onDelete || onRequestDelete) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDeleteClick}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            <FavoriteButton
+              accountId={account.id}
+              initialIsFavorite={account.is_favorite || false}
+              onToggle={onFavoriteToggle}
+            />
+            {(onDelete || onRequestDelete) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDeleteClick}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* TOTP Code */}

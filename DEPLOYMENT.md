@@ -62,7 +62,6 @@ nano .env
 **⚠️ CRITICAL: Change these immediately!**
 ```env
 ADMIN_PASSWORD=your-strong-password
-VIEWER_PASSWORD=your-viewer-password
 JWT_SECRET=$(openssl rand -hex 32)
 ENCRYPTION_KEY=$(openssl rand -hex 32)
 ```

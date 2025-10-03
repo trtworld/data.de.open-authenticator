@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!["admin", "viewer", "user"].includes(role)) {
+    if (!["admin", "user"].includes(role)) {
       return NextResponse.json(
-        { error: "Invalid role" },
+        { error: "Invalid role. Must be 'admin' or 'user'" },
         { status: 400 }
       )
     }

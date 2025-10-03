@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { apiClient, DbUser } from "@/lib/api-client"
-import { Trash2, UserPlus, Shield, Eye } from "lucide-react"
+import { Trash2, UserPlus, Shield, Eye, Users } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { BulkUserCreateDialog } from "./bulk-user-create-dialog"
 
 interface UserManagementDialogProps {
   open: boolean
@@ -29,12 +30,13 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
   const [users, setUsers] = useState<DbUser[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false)
   const [error, setError] = useState("")
 
   // Create user form state
   const [newUsername, setNewUsername] = useState("")
   const [newPassword, setNewPassword] = useState("")
-  const [newRole, setNewRole] = useState<"admin" | "viewer" | "user">("user")
+  const [newRole, setNewRole] = useState<"admin" | "user">("user")
 
   // Load users when dialog opens
   useEffect(() => {
@@ -106,8 +108,6 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
     switch (role) {
       case "admin":
         return <Shield className="w-4 h-4 text-red-500" />
-      case "viewer":
-        return <Eye className="w-4 h-4 text-blue-500" />
       default:
         return <UserPlus className="w-4 h-4 text-green-500" />
     }
@@ -137,16 +137,27 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
           </div>
         )}
 
-        {/* Create User Button */}
+        {/* Create User Buttons */}
         {!showCreateForm && (
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="w-full"
-            disabled={isLoading}
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Create New User
-          </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="w-full"
+              disabled={isLoading}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Create Single User
+            </Button>
+            <Button
+              onClick={() => setShowBulkCreateDialog(true)}
+              variant="outline"
+              className="w-full"
+              disabled={isLoading}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Bulk Create Users
+            </Button>
+          </div>
         )}
 
         {/* Create User Form */}
@@ -191,9 +202,8 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="user">User (Full Access)</SelectItem>
-                  <SelectItem value="viewer">Viewer (Read Only)</SelectItem>
-                  <SelectItem value="admin">Admin (Full Control)</SelectItem>
+                  <SelectItem value="user">User (Can create private accounts)</SelectItem>
+                  <SelectItem value="admin">Admin (Can create team accounts)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -252,8 +262,6 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           user.role === "admin"
                             ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                            : user.role === "viewer"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
                             : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                         }`}>
                           {user.role}
@@ -273,7 +281,7 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
                     </div>
                   </div>
 
-                  {user.username !== "admin" && user.username !== "viewer" && (
+                  {user.username !== "admin" && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -302,6 +310,13 @@ export function UserManagementDialog({ open, onOpenChange }: UserManagementDialo
           </Button>
         </div>
       </DialogContent>
+
+      {/* Bulk User Create Dialog */}
+      <BulkUserCreateDialog
+        open={showBulkCreateDialog}
+        onOpenChange={setShowBulkCreateDialog}
+        onSuccess={loadUsers}
+      />
     </Dialog>
   )
 }

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Shield, Github } from "lucide-react"
+import { Github } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -13,20 +14,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [logoUrl, setLogoUrl] = useState<string>("")
-
-  useEffect(() => {
-    // Load logo
-    fetch("/api/logo", { credentials: "include" })
-      .then(res => {
-        if (res.headers.get("content-type")?.includes("application/json")) {
-          return res.json().then(data => data.url)
-        }
-        return "/api/logo"
-      })
-      .then(url => setLogoUrl(url))
-      .catch(() => setLogoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0qC5LjxaKwXYMFQjLb9VX07dw5-sDc8ERySdSlZOhmXeEXAq9iqaqzKqOxjPuehTIPqY&usqp=CAU"))
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,27 +43,21 @@ export default function LoginPage() {
         <Card className="backdrop-blur-xl bg-white/90 dark:bg-slate-900/90 border-white/20 dark:border-slate-700/50 shadow-2xl">
           <CardHeader className="space-y-4 flex flex-col items-center pb-8 pt-10">
             {/* Logo */}
-            <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg ring-4 ring-primary/20 group hover:ring-primary/40 transition-all duration-300">
-              {logoUrl ? (
-                <img
-                  src={logoUrl}
-                  alt="Logo"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-primary flex items-center justify-center">
-                  <Shield className="w-10 h-10 text-white" />
-                </div>
-              )}
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden shadow-xl ring-4 ring-primary/20 group hover:ring-primary/40 transition-all duration-300 bg-white dark:bg-slate-800">
+              <Image
+                src="/logo.png"
+                alt="Otto-TP Logo"
+                width={96}
+                height={96}
+                className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-300"
+                priority
+              />
             </div>
 
             {/* Title */}
             <div className="text-center space-y-2">
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                Otto-TP
-              </CardTitle>
-              <CardDescription className="text-base">
-                Online Team-based TOTP • Open Source
+              <CardDescription className="text-base font-medium">
+                Online Team-Based TOTP Authenticator
               </CardDescription>
             </div>
           </CardHeader>

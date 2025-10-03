@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db"
 export interface ApiUser {
   id: number
   username: string
-  role: "admin" | "viewer" | "user"
+  role: "admin" | "user"
 }
 
 /**

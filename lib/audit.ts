@@ -137,26 +137,67 @@ export const AuditActions = {
   LOGIN_SUCCESS: "login_success",
   LOGIN_FAILED: "login_failed",
   LOGOUT: "logout",
+  PASSWORD_CHANGED: "password_changed",
 
   // Account operations
   ACCOUNT_CREATED: "account_created",
   ACCOUNT_UPDATED: "account_updated",
   ACCOUNT_DELETED: "account_deleted",
-  ACCOUNT_VIEWED: "account_viewed",
-  TOTP_GENERATED: "totp_generated",
+  TOTP_VIEWED: "totp_viewed",
 
   // User management
   USER_CREATED: "user_created",
-  USER_UPDATED: "user_updated",
   USER_DELETED: "user_deleted",
-  USER_ROLE_CHANGED: "user_role_changed",
+  USERS_LIST: "users:list",
 
   // API operations
   API_KEY_CREATED: "api_key_created",
   API_KEY_DELETED: "api_key_deleted",
-  API_REQUEST: "api_request",
+  API_KEY_UPDATED: "api_key_updated",
 
   // System operations
   BACKUP_DOWNLOADED: "backup_downloaded",
-  SETTINGS_CHANGED: "settings_changed",
+  LOGO_UPLOADED: "logo_uploaded",
+
+  // Favorites
+  FAVORITE_ADDED: "favorite_added",
+  FAVORITE_REMOVED: "favorite_removed",
+}
+
+/**
+ * Get distinct usernames from audit logs (for autocomplete)
+ */
+export function getDistinctUsernames(query?: string) {
+  const db = getDb()
+
+  let sql = "SELECT DISTINCT username FROM audit_logs"
+  const params: any[] = []
+
+  if (query && query.length >= 3) {
+    sql += " WHERE username LIKE ?"
+    params.push(`%${query}%`)
+  }
+
+  sql += " ORDER BY username LIMIT 20"
+
+  return db.prepare(sql).all(...params) as Array<{ username: string }>
+}
+
+/**
+ * Get distinct resources from audit logs (for autocomplete)
+ */
+export function getDistinctResources(query?: string) {
+  const db = getDb()
+
+  let sql = "SELECT DISTINCT resource FROM audit_logs WHERE resource IS NOT NULL"
+  const params: any[] = []
+
+  if (query && query.length >= 3) {
+    sql += " AND resource LIKE ?"
+    params.push(`%${query}%`)
+  }
+
+  sql += " ORDER BY resource LIMIT 20"
+
+  return db.prepare(sql).all(...params) as Array<{ resource: string }>
 }
