@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Account } from "@/types"
-import { Copy, Trash2, Check, Clock, Users, Lock, Eye, EyeOff } from "lucide-react"
+import { Copy, Trash2, Check, Clock, Users, Lock, Eye, EyeOff, QrCode } from "lucide-react"
 import { useToast } from "@/components/ui/toast"
 import { AccountIcon } from "@/components/account-icon"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -14,9 +14,11 @@ interface AccountCardProps {
   onDelete?: (id: number) => void
   onRequestDelete?: (account: Account) => void
   onFavoriteToggle?: () => void
+  onShowQR?: (account: Account) => void
+  userRole?: string
 }
 
-export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteToggle }: AccountCardProps) {
+export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteToggle, onShowQR, userRole }: AccountCardProps) {
   const [copied, setCopied] = useState(false)
   const [idCopied, setIdCopied] = useState(false)
   const [isCodeVisible, setIsCodeVisible] = useState(false)
@@ -158,6 +160,17 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
                 initialIsFavorite={account.is_favorite || false}
                 onToggle={onFavoriteToggle}
               />
+              {userRole === "admin" && onShowQR && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onShowQR(account)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Add to phone authenticator"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Button>
+              )}
               {(onDelete || onRequestDelete) && (
                 <Button
                   variant="ghost"
