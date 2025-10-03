@@ -12,6 +12,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - DB_PATH=/app/.next/standalone/data/app.db
       - JWT_SECRET=${JWT_SECRET:-your-secret-key-change-in-production}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-your-encryption-key-change-in-production-32-chars-long}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
