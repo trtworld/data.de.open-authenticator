@@ -31,10 +31,14 @@ async function initializeDefaultAdmin() {
 export function getDb(): Database.Database {
   if (!db) {
     // Ensure data directory exists
-    const { mkdirSync, existsSync } = require("fs")
-    const dataDir = join(process.cwd(), "data")
-    if (!existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true })
+    const { mkdirSync, existsSync, dirname } = require("fs")
+    const { dirname: pathDirname } = require("path")
+
+    // Extract directory from DB_PATH and create it
+    const dbDir = pathDirname(DB_PATH)
+    if (!existsSync(dbDir)) {
+      mkdirSync(dbDir, { recursive: true })
+      console.log(`📁 Created database directory: ${dbDir}`)
     }
 
     // Initialize database
