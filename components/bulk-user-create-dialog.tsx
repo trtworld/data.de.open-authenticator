@@ -42,9 +42,9 @@ export function BulkUserCreateDialog({
   const handleCreate = async () => {
     setError("")
 
-    // Parse usernames (split by newlines or commas)
+    // Parse usernames (split by newlines, commas, or spaces)
     const usernameList = usernames
-      .split(/[\n,]/)
+      .split(/[\n,\s]+/)
       .map((u) => u.trim())
       .filter((u) => u.length > 0)
 
@@ -140,7 +140,7 @@ export function BulkUserCreateDialog({
             Bulk User Creation
           </DialogTitle>
           <DialogDescription>
-            Enter usernames (one per line or comma-separated). Random passwords will be generated.
+            Enter usernames (one per line, comma-separated, or space-separated). Random passwords will be generated.
           </DialogDescription>
         </DialogHeader>
 
@@ -151,7 +151,7 @@ export function BulkUserCreateDialog({
                 <Label htmlFor="usernames">Usernames</Label>
                 <Textarea
                   id="usernames"
-                  placeholder="john.doe&#10;jane.smith&#10;alice.johnson&#10;&#10;or: user1, user2, user3"
+                  placeholder="john.doe&#10;jane.smith&#10;alice.johnson&#10;&#10;or comma: user1, user2, user3&#10;or space: user1 user2 user3"
                   value={usernames}
                   onChange={(e) => setUsernames(e.target.value)}
                   rows={8}

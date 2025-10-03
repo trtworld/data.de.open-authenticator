@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 import { User } from "@/types"
-import { Settings, Download, UserPlus, KeyRound, Github } from "lucide-react"
+import { Settings, Download, Upload, UserPlus, KeyRound, Github } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChangePasswordDialog } from "@/components/change-password-dialog"
 import { UserManagementDialog } from "@/components/user-management-dialog"
+import { ImportAccountsDialog } from "@/components/import-accounts-dialog"
 import { ToastProvider } from "@/components/ui/toast"
 import Image from "next/image"
 
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [loading, setLoading] = useState(true)
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [showUsersDialog, setShowUsersDialog] = useState(false)
+  const [showImportDialog, setShowImportDialog] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -127,6 +129,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <UserPlus className="w-4 h-4 mr-2" />
                       Manage Users
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setShowImportDialog(true)}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import Accounts
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleBackup}>
                       <Download className="w-4 h-4 mr-2" />
                       Download Backup
@@ -198,6 +205,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <UserManagementDialog
         open={showUsersDialog}
         onOpenChange={setShowUsersDialog}
+      />
+
+      {/* Import Accounts Dialog */}
+      <ImportAccountsDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onSuccess={() => {
+          // Reload page to show newly imported accounts
+          window.location.reload()
+        }}
       />
       </div>
     </ToastProvider>
