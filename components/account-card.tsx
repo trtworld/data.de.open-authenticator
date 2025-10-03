@@ -111,14 +111,14 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             {/* Title Row */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-start gap-2 mb-2">
               <AccountIcon
                 iconIdentifier={account.icon_identifier}
                 issuer={account.issuer}
                 label={account.label}
                 className="w-8 h-8 flex-shrink-0"
               />
-              <h3 className="font-bold text-lg break-words bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+              <h3 className="flex-1 font-bold text-lg break-words overflow-wrap-anywhere bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
                 {account.label}
               </h3>
             </div>
