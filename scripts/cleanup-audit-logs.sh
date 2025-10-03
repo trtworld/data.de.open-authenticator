@@ -4,8 +4,8 @@
 # This script runs inside the Docker container to clean old audit logs
 
 RETENTION_DAYS=${AUDIT_RETENTION_DAYS:-30}
-DB_PATH="/app/data/app.db"
-LOG_FILE="/app/data/audit-cleanup.log"
+DB_PATH="${DB_PATH:-/app/.next/standalone/data/app.db}"
+LOG_FILE="/app/.next/standalone/data/audit-cleanup.log"
 
 # Calculate cutoff timestamp (current time - retention days in seconds)
 CUTOFF_TIMESTAMP=$(($(date +%s) - (RETENTION_DAYS * 86400)))
