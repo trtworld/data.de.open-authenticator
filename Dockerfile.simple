@@ -31,8 +31,10 @@ RUN cp -r .next/static .next/standalone/.next/static && \
     mkdir -p .next/standalone/lib/db && \
     cp lib/db/schema.sql .next/standalone/lib/db/schema.sql
 
-# Create data directory in standalone
-RUN mkdir -p /app/.next/standalone/data
+# Create data directory in standalone and root (for Railway)
+RUN mkdir -p /app/.next/standalone/data && \
+    mkdir -p /app/data && \
+    chmod -R 777 /app/data /app/.next/standalone/data
 
 EXPOSE 3000
 
