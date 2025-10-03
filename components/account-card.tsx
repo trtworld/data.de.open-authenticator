@@ -108,90 +108,88 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
 
       <CardContent className="p-5 sm:p-6 relative z-10">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1 min-w-0">
-            {/* Title Row */}
-            <div className="flex items-start gap-2 mb-2">
-              <AccountIcon
-                iconIdentifier={account.icon_identifier}
-                issuer={account.issuer}
-                label={account.label}
-                className="w-8 h-8 flex-shrink-0"
-              />
-              <h3 className="flex-1 font-bold text-lg break-words overflow-wrap-anywhere bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                {account.label}
-              </h3>
-            </div>
-
-            {/* Metadata Row - Issuer, Badges, API ID */}
-            <div className="flex flex-wrap items-center gap-2">
-              {account.issuer && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                  {account.issuer}
-                </p>
-              )}
-
-              {/* Visibility Badge */}
-              {account.visibility === "private" ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium">
-                  <Lock className="w-3 h-3" />
-                  Private
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                  <Users className="w-3 h-3" />
-                  Team
-                </span>
-              )}
-
-              {/* Favorite Badge */}
-              {account.is_favorite && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium">
-                  ⭐ Favorite
-                </span>
-              )}
-
-              {/* API ID Copy Button */}
-              <button
-                onClick={handleCopyId}
-                className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 hover:bg-muted rounded text-xs flex items-center gap-1"
-                title={`Copy API ID for this account`}
-              >
-                {idCopied ? (
-                  <>
-                    <Check className="w-3 h-3 text-green-600" />
-                    <span className="text-green-600 font-medium">Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3 h-3 text-muted-foreground hover:text-foreground transition-colors" />
-                    <span className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-                      API ID: {account.id}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
+        <div className="mb-4">
+          {/* Title Row */}
+          <div className="flex items-start gap-2 mb-2">
+            <AccountIcon
+              iconIdentifier={account.icon_identifier}
+              issuer={account.issuer}
+              label={account.label}
+              className="w-8 h-8 flex-shrink-0"
+            />
+            <h3 className="flex-1 font-bold text-lg break-words overflow-wrap-anywhere bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+              {account.label}
+            </h3>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-1">
-            <FavoriteButton
-              accountId={account.id}
-              initialIsFavorite={account.is_favorite || false}
-              onToggle={onFavoriteToggle}
-            />
-            {(onDelete || onRequestDelete) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDeleteClick}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+          {/* Metadata Row - Issuer, Badges, Action Buttons, API ID */}
+          <div className="flex flex-wrap items-center gap-2">
+            {account.issuer && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                {account.issuer}
+              </p>
             )}
+
+            {/* Visibility Badge */}
+            {account.visibility === "private" ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium">
+                <Lock className="w-3 h-3" />
+                Private
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                <Users className="w-3 h-3" />
+                Team
+              </span>
+            )}
+
+            {/* Favorite Badge */}
+            {account.is_favorite && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium">
+                ⭐ Favorite
+              </span>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1 ml-auto">
+              <FavoriteButton
+                accountId={account.id}
+                initialIsFavorite={account.is_favorite || false}
+                onToggle={onFavoriteToggle}
+              />
+              {(onDelete || onRequestDelete) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDeleteClick}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* API ID Copy Button */}
+            <button
+              onClick={handleCopyId}
+              className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 hover:bg-muted rounded text-xs flex items-center gap-1 w-full sm:w-auto"
+              title={`Copy API ID for this account`}
+            >
+              {idCopied ? (
+                <>
+                  <Check className="w-3 h-3 text-green-600" />
+                  <span className="text-green-600 font-medium">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3 text-muted-foreground hover:text-foreground transition-colors" />
+                  <span className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                    API ID: {account.id}
+                  </span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
