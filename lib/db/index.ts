@@ -2,10 +2,30 @@ import Database from "better-sqlite3"
 import { readFileSync } from "fs"
 import { join } from "path"
 import { runMigrations } from "../db-migrations"
+import bcrypt from "bcrypt"
 
 const DB_PATH = process.env.DB_PATH || join(process.cwd(), "data", "app.db")
 
 let db: Database.Database | null = null
+
+async function initializeDefaultAdmin() {
+  if (!db) return
+
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin"
+
+  // Check if admin user exists
+  const adminExists = db.prepare("SELECT 1 FROM users WHERE username = ?").get("admin")
+
+  if (!adminExists) {
+    console.log("📝 Creating default admin user...")
+    const adminHash = await bcrypt.hash(adminPassword, 10)
+    db.prepare(`
+      INSERT INTO users (username, password_hash, role, created_by, is_active)
+      VALUES (?, ?, 'admin', 'system', 1)
+    `).run("admin", adminHash)
+    console.log("✅ Default admin user created (username: admin)")
+  }
+}
 
 export function getDb(): Database.Database {
   if (!db) {
@@ -27,6 +47,11 @@ export function getDb(): Database.Database {
 
     // Run migrations
     runMigrations()
+
+    // Initialize default admin user
+    initializeDefaultAdmin().catch(err => {
+      console.error("Failed to create default admin user:", err)
+    })
 
     console.log("✅ Database initialized at:", DB_PATH)
   }

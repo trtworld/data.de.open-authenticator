@@ -37,13 +37,21 @@ export async function POST(request: NextRequest) {
 
     // Set cookie
     const cookieStore = await cookies()
+    // Only set secure if HTTPS is available (check via header or env var)
+    const isHttps = request.headers.get("x-forwarded-proto") === "https" ||
+                    process.env.HTTPS === "true"
+
+    console.log("🍪 Setting session cookie:", { isHttps, secure: isHttps })
+
     cookieStore.set("session", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isHttps,
       sameSite: "lax",
       maxAge: 24 * 60 * 60, // 24 hours
       path: "/",
     })
+
+    console.log("✅ Cookie set successfully")
 
     // Log successful login
     logAudit({

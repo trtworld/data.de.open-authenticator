@@ -28,34 +28,12 @@ const JWT_SECRET = new TextEncoder().encode(
 const SESSION_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 /**
- * Initialize default users from environment variables
- */
-async function initializeDefaultUsers() {
-  const db = getDb()
-
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin"
-
-  // Check if admin user exists
-  const adminExists = db.prepare("SELECT 1 FROM users WHERE username = ?").get("admin")
-
-  if (!adminExists) {
-    const adminHash = await bcrypt.hash(adminPassword, 10)
-    db.prepare(`
-      INSERT INTO users (username, password_hash, role, created_by, is_active)
-      VALUES (?, ?, 'admin', 'system', 1)
-    `).run("admin", adminHash)
-  }
-}
-
-/**
  * Authenticate user with username/password
  */
 export async function authenticate(
   username: string,
   password: string
 ): Promise<User | null> {
-  // Initialize default users on first auth attempt
-  await initializeDefaultUsers()
 
   const db = getDb()
   const user = db.prepare<DbUser, string>(
