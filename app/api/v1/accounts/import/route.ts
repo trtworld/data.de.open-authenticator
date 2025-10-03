@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { encrypt } from "@/lib/encryption"
+import { encryptSecret } from "@/lib/totp"
 import { logAudit } from "@/lib/audit"
 import { verifyApiKey } from "@/lib/api-auth"
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "change-this-encryption-key-in-production-32-chars-long"
 
 interface ImportAccount {
   label: string
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Encrypt secret
-        const encryptedSecret = encrypt(account.secret)
+        const encryptedSecret = encryptSecret(account.secret, ENCRYPTION_KEY)
 
         // Insert account
         db.prepare(
