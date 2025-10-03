@@ -387,14 +387,31 @@ export default function ApiKeysPage() {
               <BookOpen className="w-4 h-4 mr-2" />
               View Full API Documentation
             </Button>
-            <div className="space-y-2 text-sm">
-              <p>
-                <strong>Quick Start:</strong>
-              </p>
-              <code className="block p-2 bg-muted rounded text-xs">
-                curl -H "Authorization: Bearer YOUR_KEY" \<br />
-                &nbsp;&nbsp;"http://localhost:3000/api/v1/totp/generate?account_code=google:user@example.com"
-              </code>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="mb-2">
+                  <strong>Quick Start - Using Account ID:</strong>
+                </p>
+                <code className="block p-2 bg-muted rounded text-xs">
+                  curl -H "Authorization: Bearer YOUR_KEY" \<br />
+                  &nbsp;&nbsp;"http://localhost:3000/api/v1/totp/generate?account_id=15"
+                </code>
+                <p className="text-xs text-muted-foreground mt-1">
+                  💡 Hover over any account in Dashboard to see its API ID
+                </p>
+              </div>
+              <div>
+                <p className="mb-2">
+                  <strong>Or Using Account Code:</strong>
+                </p>
+                <code className="block p-2 bg-muted rounded text-xs">
+                  curl -H "Authorization: Bearer YOUR_KEY" \<br />
+                  &nbsp;&nbsp;"http://localhost:3000/api/v1/totp/generate?account_code=google:user@example.com"
+                </code>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Format: <code className="bg-background px-1 rounded">issuer:label</code>
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

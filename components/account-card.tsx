@@ -110,16 +110,29 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            {/* Title Row */}
+            <div className="flex items-center gap-2 mb-2">
               <AccountIcon
                 iconIdentifier={account.icon_identifier}
                 issuer={account.issuer}
                 label={account.label}
                 className="w-8 h-8 flex-shrink-0"
               />
-              <h3 className="font-bold text-lg truncate bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
+              <h3 className="font-bold text-lg break-words bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
                 {account.label}
               </h3>
+            </div>
+
+            {/* Metadata Row - Issuer, Badges, API ID */}
+            <div className="flex flex-wrap items-center gap-2">
+              {account.issuer && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                  {account.issuer}
+                </p>
+              )}
+
+              {/* Visibility Badge */}
               {account.visibility === "private" ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium">
                   <Lock className="w-3 h-3" />
@@ -131,14 +144,15 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
                   Team
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
-              {account.issuer && (
-                <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-                  {account.issuer}
-                </p>
+
+              {/* Favorite Badge */}
+              {account.is_favorite && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium">
+                  ⭐ Favorite
+                </span>
               )}
+
+              {/* API ID Copy Button */}
               <button
                 onClick={handleCopyId}
                 className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 hover:bg-muted rounded text-xs flex items-center gap-1"
@@ -160,6 +174,8 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
               </button>
             </div>
           </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-1">
             <FavoriteButton
               accountId={account.id}
