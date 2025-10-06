@@ -12,9 +12,32 @@ export default function ApiDocsPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   const handleCopy = async (code: string, id: string) => {
-    await navigator.clipboard.writeText(code)
-    setCopiedCode(id)
-    setTimeout(() => setCopiedCode(null), 2000)
+    try {
+      // Modern clipboard API with fallback
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(code)
+      } else {
+        // Fallback for older browsers or non-HTTPS contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = code
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        try {
+          document.execCommand('copy')
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+      setCopiedCode(id)
+      setTimeout(() => setCopiedCode(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      // You could show a toast notification here if desired
+    }
   }
 
   const CodeBlock = ({ code, language = "bash", id }: { code: string; language?: string; id: string }) => (
