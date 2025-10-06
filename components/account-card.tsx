@@ -29,16 +29,45 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
     if (!isCodeVisible) {
       await toggleCodeVisibility()
     }
-    await navigator.clipboard.writeText(account.code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
 
-    // Show success toast
-    addToast({
-      variant: "success",
-      title: "✓ Code Copied!",
-      description: `${account.label} - ${account.code}`,
-    })
+    // Copy to clipboard with fallback
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(account.code)
+      } else {
+        // Fallback for older browsers or non-HTTPS contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = account.code
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        try {
+          document.execCommand('copy')
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+
+      // Show success toast
+      addToast({
+        variant: "success",
+        title: "✓ Code Copied!",
+        description: `${account.label} - ${account.code}`,
+      })
+    } catch (error) {
+      console.error("Failed to copy code:", error)
+      addToast({
+        variant: "destructive",
+        title: "Copy Failed",
+        description: "Could not copy code to clipboard",
+      })
+    }
 
     // Increment copy count
     try {
@@ -63,9 +92,34 @@ export function AccountCard({ account, onDelete, onRequestDelete, onFavoriteTogg
 
   const handleCopyId = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    await navigator.clipboard.writeText(account.id.toString())
-    setIdCopied(true)
-    setTimeout(() => setIdCopied(false), 2000)
+
+    try {
+      const idText = account.id.toString()
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(idText)
+      } else {
+        // Fallback for older browsers or non-HTTPS contexts
+        const textArea = document.createElement('textarea')
+        textArea.value = idText
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        textArea.style.top = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        try {
+          document.execCommand('copy')
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+
+      setIdCopied(true)
+      setTimeout(() => setIdCopied(false), 2000)
+    } catch (error) {
+      console.error("Failed to copy ID:", error)
+    }
   }
 
   const toggleCodeVisibility = async () => {
