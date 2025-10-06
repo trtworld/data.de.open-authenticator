@@ -8,6 +8,7 @@ import { AccountCard } from "@/components/account-card"
 import { AccountCardSkeletonGrid } from "@/components/account-card-skeleton"
 import { AddAccountDialog } from "@/components/add-account-dialog"
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog"
+import { QRCodeDialog } from "@/components/qr-code-dialog"
 import { apiClient } from "@/lib/api-client"
 import { Account, User } from "@/types"
 import { LogOut, Plus, Shield, Key, BookOpen, Search, X, Activity } from "lucide-react"
@@ -21,6 +22,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null)
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [accountForQR, setAccountForQR] = useState<Account | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedIssuer, setSelectedIssuer] = useState<string>("all")
 
@@ -119,6 +122,11 @@ export default function DashboardPage() {
   const handleRequestDelete = (account: Account) => {
     setAccountToDelete(account)
     setDeleteDialogOpen(true)
+  }
+
+  const handleShowQR = (account: Account) => {
+    setAccountForQR(account)
+    setQrDialogOpen(true)
   }
 
   const handleConfirmDelete = async () => {
@@ -389,6 +397,8 @@ export default function DashboardPage() {
                 account={account}
                 onRequestDelete={handleRequestDelete}
                 onFavoriteToggle={reloadAccounts}
+                onShowQR={handleShowQR}
+                userRole={user?.role}
               />
             </div>
           ))}
@@ -409,6 +419,13 @@ export default function DashboardPage() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         account={accountToDelete}
+      />
+
+      {/* QR Code Dialog */}
+      <QRCodeDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        account={accountForQR}
       />
     </div>
   )

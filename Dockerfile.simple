@@ -25,14 +25,17 @@ RUN chmod +x scripts/*.sh
 # Copy static files to standalone directory
 RUN cp -r .next/static .next/standalone/.next/static && \
     mkdir -p .next/standalone/public && \
-    cp -r public/* .next/standalone/public/ 2>/dev/null || true && \
+    cp -r public/. .next/standalone/public/ && \
+    ls -la .next/standalone/public/ && \
     mkdir -p .next/standalone/scripts && \
     cp scripts/*.sh .next/standalone/scripts/ && \
     mkdir -p .next/standalone/lib/db && \
     cp lib/db/schema.sql .next/standalone/lib/db/schema.sql
 
-# Create data directory in standalone
-RUN mkdir -p /app/.next/standalone/data
+# Create data directory in standalone and root (for Railway)
+RUN mkdir -p /app/.next/standalone/data && \
+    mkdir -p /app/data && \
+    chmod -R 777 /app/data /app/.next/standalone/data
 
 EXPOSE 3000
 
